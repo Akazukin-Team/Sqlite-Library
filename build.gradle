@@ -38,7 +38,7 @@ configurations {
 }
 
 dependencies {
-    include('org.xerial:sqlite-jdbc:3.44.1.0')
+    include ('org.xerial:sqlite-jdbc:3.44.1.0')
     compileOnly 'org.projectlombok:lombok:1.18.30'
     annotationProcessor 'org.projectlombok:lombok:1.18.30'
 }

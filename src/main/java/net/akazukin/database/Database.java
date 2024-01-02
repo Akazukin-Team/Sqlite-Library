@@ -5,7 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.io.IOException;
-import java.nio.file.FileSystemAlreadyExistsException;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Connection;
@@ -63,7 +63,7 @@ public class Database {
         try {
             try {
                 Files.createDirectory(path.getParent());
-            } catch (FileSystemAlreadyExistsException ignored) {
+            } catch (FileAlreadyExistsException ignored) {
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
