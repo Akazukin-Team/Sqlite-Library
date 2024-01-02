@@ -59,17 +59,6 @@ application {
     applicationDefaultJvmArgs = ["-Xms3G", "-Xmx4G"]
 }
 
-/*shadowJar {
-    archiveClassifier.set("")
-    configurations = [project.configurations.include]
-    duplicatesStrategy DuplicatesStrategy.EXCLUDE
-    exclude "META-INF/MANIFEST.MF"
-
-    //exclude "META-INF/**"
-}*/
-
-
-
 publishing {
     publications {
         maven(MavenPublication) {
@@ -103,7 +92,7 @@ publishing {
         }
     }
 }
-configurations.include.dependencies.asList()
+
 /*task optimizeJar(type: proguard.gradle.ProGuardTask, dependsOn: shadowJar) {
     group "proguard"
     description 'Optimize the the jar output with shadowJar'
