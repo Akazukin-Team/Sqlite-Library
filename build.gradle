@@ -1,0 +1,181 @@
+buildscript {
+    repositories {
+        mavenCentral()
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+    }
+    dependencies {
+        //classpath 'org.hidetake:gradle-ssh-plugin:2.10.1'
+        classpath('com.guardsquare:proguard-gradle:7.4.0-beta02')
+    }
+}
+
+plugins {
+    id "java"
+    id "idea"
+    //id "com.github.johnrengelman.shadow" version "8.1.1"
+    id "application"
+    id "maven-publish"
+}
+
+repositories {
+    maven {
+        url 'https://jitpack.io'
+    }
+    mavenLocal()
+    mavenCentral()
+}
+
+compileJava.options.encoding = "UTF-8"
+
+configurations {
+    include
+    implementation.extendsFrom(include)
+    runtimeOnly.extendsFrom(include)
+    runtimeOnly.canBeResolved = true
+    implementation.canBeResolved = true
+}
+
+dependencies {
+    include('org.xerial:sqlite-jdbc:3.44.1.0')
+    compileOnly 'org.projectlombok:lombok:1.18.30'
+    annotationProcessor 'org.projectlombok:lombok:1.18.30'
+}
+
+jar {
+    manifest {
+        attributes 'Main-Class': 'net.akazukin.bot.Main'
+    }
+}
+
+application {
+    File runningDir = new File('run/')
+    runningDir.mkdirs()
+    tasks.run.workingDir = runningDir
+
+    mainClassName = jar.manifest.attributes.get("Main-Class")
+    executableDir = "run/"
+    applicationDefaultJvmArgs = ["-Xms3G", "-Xmx4G"]
+}
+
+/*shadowJar {
+    archiveClassifier.set("")
+    configurations = [project.configurations.include]
+    duplicatesStrategy DuplicatesStrategy.EXCLUDE
+    exclude "META-INF/MANIFEST.MF"
+
+    //exclude "META-INF/**"
+}*/
+
+
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            pom {
+                name = 'Sqlite Library'
+                description = 'A library for to use the SQLite for easily coding'
+                url = 'http://www.akazukin.net/sqlite-lib'
+                /*properties = [
+                        myProp: "value",
+                        "prop.with.dots": "anotherValue"
+                ]*/
+                licenses {
+                    license {
+                        name = 'The Apache License, Version 2.0'
+                        url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    }
+                }
+                developers {
+                    developer {
+                        id = 'currypan1229'
+                        name = 'Currypan1229'
+                        email = 'abcqqqwpvp@gmail.com'
+                    }
+                }
+            }
+
+            groupId = project.group
+            artifactId = 'Sqlite'
+            version = project.version
+            from components.java
+        }
+    }
+}
+configurations.include.dependencies.asList()
+/*task optimizeJar(type: proguard.gradle.ProGuardTask, dependsOn: shadowJar) {
+    group "proguard"
+    description 'Optimize the the jar output with shadowJar'
+
+    File shadowedJar = shadowJar.archiveFile.get().asFile
+    String afterJar = shadowedJar.path.replace(".jar", " OPT2.jar")
+
+    doFirst {
+        delete file(afterJar)
+    }
+
+    def javaHome = compileJava.javaCompiler.get().metadata.installationPath
+
+    injars(shadowedJar)
+    outjars(afterJar)
+
+    libraryjars file((JavaVersion.current().java5 || JavaVersion.current().java6 || JavaVersion.current().java7 || JavaVersion.current().java8) ? "${javaHome}\\lib\\rt.jar" : "${javaHome}\\jmods")
+    libraryjars files(configurations.implementation.collect())
+
+
+    keep("public class " + jar.manifest.attributes.get("Main-Class") +" { public static void main(java.lang.String[]); }")
+
+    dontwarn()
+    dontobfuscate()
+    adaptresourcefilecontents("META-INF/MANIFEST.MF")
+
+    keep("class org.apache.logging.** { *; }")
+    keep("class org.apache.commons.logging.** { *; }")
+    keep("class org.sqlite.** { *; }")
+    keep("class com.fasterxml.jackson.databind.** { *; }")
+    keepclassmembers("enum * { public static **[] values(); public static ** valueOf(java.lang.String); }")
+    keepclassmembers("class * { @net.akazukin.bot.event.EventTarget <methods>; }")
+}
+
+task obufuscateJar(type: proguard.gradle.ProGuardTask, dependsOn: shadowJar) {
+    group "proguard"
+    description 'Obfuscates the the jar output with shadowJar'
+
+    File shadowedJar = shadowJar.archiveFile.get().asFile
+    String afterJar = shadowedJar.path.replace(".jar", " OBF.jar")
+
+    doFirst {
+        delete file(afterJar)
+    }
+
+    def javaHome = compileJava.javaCompiler.get().metadata.installationPath
+
+    injars(shadowedJar)
+    outjars(afterJar)
+
+    libraryjars file((JavaVersion.current().java5 || JavaVersion.current().java6 || JavaVersion.current().java7 || JavaVersion.current().java8) ? "${javaHome}\\lib\\rt.jar" : "${javaHome}\\jmods")
+    libraryjars files(configurations.implementation.collect())
+
+
+    keep("public class " + jar.manifest.attributes.get("Main-Class") +" { public static void main(java.lang.String[]); }")
+
+    dontwarn()
+    adaptresourcefilecontents("META-INF/MANIFEST.MF")
+
+    keep("class org.apache.logging.** { *; }")
+    keep("class org.apache.commons.logging.** { *; }")
+    keep("class org.sqlite.** { *; }")
+    keep("class com.fasterxml.jackson.databind.** { *; }")
+    keepclassmembers("enum * { public static **[] values(); public static ** valueOf(java.lang.String); }")
+    keepclassmembers("class * { @net.akazukin.bot.event.EventTarget <methods>; }")
+
+
+    //obfuscationdictionary("Obfuscate-Mapping.txt")
+    classobfuscationdictionary("Obfuscate-Mapping.txt")
+    packageobfuscationdictionary("Obfuscate-Mapping.txt")
+    overloadaggressively()
+    useuniqueclassmembernames()
+    repackageclasses("net.akazukin")
+    //keepattributes("*Annotation*")
+}*/

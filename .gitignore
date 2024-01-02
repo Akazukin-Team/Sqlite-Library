@@ -1,0 +1,17 @@
+# Ignore Jetbrains project settings directory
+.idea
+.fleet
+
+# Ignore Gradle project-specific cache directory
+.gradle
+
+# Ignore Gradle build output directory
+bin
+build
+
+# Ignore debug running folder
+run
+
+# Ingore gir
+.git
+.github
