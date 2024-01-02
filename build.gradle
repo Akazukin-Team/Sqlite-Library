@@ -97,7 +97,7 @@ publishing {
             }
 
             groupId = project.group
-            artifactId = 'Sqlite'
+            artifactId = 'sqlite'
             version = project.version
             from components.java
         }
