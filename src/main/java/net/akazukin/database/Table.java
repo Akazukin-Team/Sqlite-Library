@@ -13,16 +13,18 @@ import java.util.Objects;
 
 @Getter
 public class Table {
-    final Database database;
-    final String table;
-    public Table(Database database, String table) {
+    private final Database database;
+    private final String table;
+    public Table(final Database database, final String table) {
         this.database = database;
         this.table = table;
     }
 
-    public void create(Key... keys) {
+    public void create(final Key... keys) {
+        if (Arrays.stream(keys).noneMatch(Key::isPrimaryKey))
+            throw new IllegalArgumentException("Primary key was not found");
         if (tableExists()) {
-            Key[] keys2 = getKey();
+            final Key[] keys2 = getKey();
 
             Arrays.stream(keys).forEach(key -> {
                 if (!Arrays.asList(keys2).contains(key)) {
@@ -35,9 +37,9 @@ public class Table {
                 }
             });
         } else {
-            List<String> primaryKeys = new ArrayList<>();
-            List<String> keys2 = new ArrayList<>();
-            for (Key key : keys) {
+            final List<String> primaryKeys = new ArrayList<>();
+            final List<String> keys2 = new ArrayList<>();
+            for (final Key key : keys) {
                 String key2 = key.getName() + " " + key.getType().getName();
                 if (key.getLength() != 0) key2 += "(" + key.getLength() + ")";
                 if (!key.isNullable()) key2 += " NOT NULL";
@@ -55,11 +57,11 @@ public class Table {
     }
 
     public boolean tableExists() {
-        try (ResultSet tables = database.getMetaData().getTables(null, null, null, new String[]{"TABLE"})) {
+        try (final ResultSet tables = database.getMetaData().getTables(null, null, null, new String[]{"TABLE"})) {
             while (tables.next()) {
                 if (tables.getString("TABLE_NAME").equals(table)) return true;
             }
-        } catch (SQLException e) {
+        } catch (final SQLException e) {
             e.printStackTrace();
         }
         return false;
@@ -70,8 +72,8 @@ public class Table {
     }
 
     public Key[] getKey() {
-        try (ResultSet rs = database.executeQuery("PRAGMA table_info(" + table + ");")) {
-            List<Key> keys = new ArrayList<>();
+        try (final ResultSet rs = database.executeQuery("PRAGMA table_info(" + table + ");")) {
+            final List<Key> keys = new ArrayList<>();
 
             while (rs.next()) {
                 final String type = rs.getString("type");
@@ -87,7 +89,7 @@ public class Table {
                 }
             }
             return keys.toArray(new Key[0]);
-        } catch (SQLException e) {
+        } catch (final SQLException e) {
             throw new RuntimeException(e);
         }
     }
@@ -96,126 +98,126 @@ public class Table {
         return Arrays.stream(getKey()).filter(column -> !column.isPrimaryKey).toArray(Column[]::new);
     }
 
-    private void setData(Object[] primaryKeys, Column column, Object value) {
-        setData(new Object[]{primaryKeys}, new Column[]{column}, new Object[]{value});
+    private void setData(final Object[] primaryKeys, final Column[] columns, final Object[] values) {
+        setData(primaryKeys, columns, values, false);
     }
 
-    private void setData(Object[] primaryKeys, Column[] columns, Object... values) {
-        PrimaryKey[] primaryKeys2 = getPrimaryKey();
+    private void setData(final Object[] primaryKeys, final Column[] columns, final Object[] values, final boolean transaction) {
+        final PrimaryKey[] primaryKeys2 = getPrimaryKey();
 
         if (primaryKeys.length != primaryKeys2.length) throw new RuntimeException("Keys length isn't SQL keys length");
         if (columns.length != values.length) throw new RuntimeException("Values length isn't value keys length");
 
         if (isExists(primaryKeys2, primaryKeys)) {
-            List<String> keyStrs = new ArrayList<>();
+            final List<String> keyStrs = new ArrayList<>();
             for (int i = 0; i < primaryKeys.length; i++) {
-                Object primaryKey = primaryKeys[i];
-                PrimaryKey primaryKey2 = primaryKeys2[i];
+                final Object primaryKey = primaryKeys[i];
+                final PrimaryKey primaryKey2 = primaryKeys2[i];
                 if (!DatabaseUtils.validKey(primaryKey2.getType(), primaryKey))
                     throw new RuntimeException("Key is invalid (" + primaryKey + ")");
 
-                boolean keyStrCheck = primaryKey2.getType() == Key.Type.String;
+                final boolean keyStrCheck = primaryKey2.getType() == Key.Type.String;
                 keyStrs.add(primaryKey2.getName() + " = " + (keyStrCheck ? "'" : "") + primaryKey + (keyStrCheck ? "'" : ""));
             }
 
-            List<String> valueStrs = new ArrayList<>();
+            final List<String> valueStrs = new ArrayList<>();
             for (int i = 0; i < values.length; i++) {
-                Object value = values[i];
-                Column value2 = columns[i];
+                final Object value = values[i];
+                final Column value2 = columns[i];
                 if (!DatabaseUtils.validValue(value2.getType(), value))
                     throw new RuntimeException("Value is invalid (" + value + ")");
 
-                boolean strCheck = value2.getType() == Key.Type.String;
+                final boolean strCheck = value2.getType() == Key.Type.String;
                 valueStrs.add(value2.getName() + " = " + (strCheck ? "'" : "") + value + (strCheck ? "'" : ""));
             }
 
-            database.executeUpdate("UPDATE " + table + " SET " + String.join(", ", valueStrs) + " WHERE " + String.join(" AND " , keyStrs) + ";");
+            database.executeUpdate("UPDATE " + table + " SET " + String.join(", ", valueStrs) + " WHERE " + String.join(" AND " , keyStrs) + ";", transaction);
         } else {
-            List<Key> keys_ = new ArrayList<>(Arrays.asList(primaryKeys2));
+            final List<Key> keys_ = new ArrayList<>(Arrays.asList(primaryKeys2));
             keys_.addAll(Arrays.asList(columns));
 
-            List<Object> values_ = new ArrayList<>(Arrays.asList(primaryKeys));
+            final List<Object> values_ = new ArrayList<>(Arrays.asList(primaryKeys));
             values_.addAll(Arrays.asList(values));
 
-            List<String> keyStrs = new ArrayList<>();
-            List<String> valueStrs = new ArrayList<>();
+            final List<String> keyStrs = new ArrayList<>();
+            final List<String> valueStrs = new ArrayList<>();
             for (int i = 0; i < keys_.size(); i++) {
-                Key keyColumn = keys_.get(i);
-                boolean keyStrCheck = keyColumn.getType() == Key.Type.String;
+                final Key keyColumn = keys_.get(i);
+                final boolean keyStrCheck = keyColumn.getType() == Key.Type.String;
                 keyStrs.add(keyColumn.getName());
                 valueStrs.add((keyStrCheck ? "'" : "") + values_.get(i) + (keyStrCheck ? "'" : ""));
             }
 
-            database.executeUpdate("insert into " + table + "(" + String.join(", ", keyStrs) + ") values(" + String.join(", ", valueStrs) + ");", false);
+            database.executeUpdate("insert into " + table + "(" + String.join(", ", keyStrs) + ") values(" + String.join(", ", valueStrs) + ");", transaction);
         }
     }
 
-    public void set(Object[] primaryKeys, Object... values) {
-        setData(primaryKeys, getColumn(), values);
+    public void setData(final Object[] primaryKeys, final Object key2, final Object value, final boolean transaction) {
+        setData(primaryKeys, Arrays.stream(getKey()).filter(key_ -> !key_.isPrimaryKey && key_.getName().equalsIgnoreCase(String.valueOf(key2))).toArray(Column[]::new), new Object[]{value}, transaction);
     }
 
-    public void setData(Object[] primaryKeys, Object key2, Object value) {
-        setData(primaryKeys, Arrays.stream(getKey()).filter(key_ -> !key_.isPrimaryKey && key_.getName().equalsIgnoreCase(String.valueOf(key2))).toArray(Column[]::new), new Object[]{value});
+    public void setData(final Object[] primaryKeys, final Object key2, final Object value) {
+        setData(primaryKeys, Arrays.stream(getKey()).filter(key_ -> !key_.isPrimaryKey && key_.getName().equalsIgnoreCase(String.valueOf(key2))).toArray(Column[]::new), new Object[]{value}, false);
     }
 
-    public boolean isExists(Object... values) {
+    public boolean isExists(final Object... values) {
         return isExists(getPrimaryKey(), values);
     }
-    public boolean isExists(Key[] keys, Object... values) {
+    public boolean isExists(final Key[] keys, final Object... values) {
         if (keys.length != values.length) throw new RuntimeException("Key length isn't values length");
 
-        List<String> sqlStrs = new ArrayList<>();
+        final List<String> sqlStrs = new ArrayList<>();
         for (int i = 0; i < keys.length; i++) {
-            Key key = keys[i];
-            Object value = values[i];
+            final Key key = keys[i];
+            final Object value = values[i];
 
-            boolean strCheck = key.getType() == Key.Type.String;
+            final boolean strCheck = key.getType() == Key.Type.String;
             sqlStrs.add(key.getName() + " = " + (strCheck ? "'" : "") + value + (strCheck ? "'" : ""));
         }
 
-        try (ResultSet rs = database.executeQuery("SELECT EXISTS(SELECT * FROM " + table +  " WHERE " + String.join(" AND ", sqlStrs) + ");")) {
+        try (final ResultSet rs = database.executeQuery("SELECT EXISTS(SELECT * FROM " + table +  " WHERE " + String.join(" AND ", sqlStrs) + ");")) {
             return rs.getInt(1) == 1;
-        } catch (Exception e) {
+        } catch (final Exception e) {
             throw new RuntimeException(e);
         }
     }
 
-    public HashMap<Column, Object> getWithColumns(Object... primaryKeys) {
-        PrimaryKey[] primaryKeys2 = getPrimaryKey();
+    public HashMap<Column, Object> getWithColumns(final Object... primaryKeys) {
+        final PrimaryKey[] primaryKeys2 = getPrimaryKey();
         if (primaryKeys.length != primaryKeys2.length) throw new RuntimeException("Keys length isn't SQL keys length");
 
         String sqlStr = "";
         for (int i = 0; i < primaryKeys.length; i++) {
-            PrimaryKey primaryKey = primaryKeys2[i];
-            Object primaryKey2 = primaryKeys[i];
+            final PrimaryKey primaryKey = primaryKeys2[i];
+            final Object primaryKey2 = primaryKeys[i];
 
-            boolean strCheck = primaryKey.getType() == Key.Type.String;
+            final boolean strCheck = primaryKey.getType() == Key.Type.String;
             sqlStr += primaryKey.getName() + " = " + (strCheck ? "'" : "") + primaryKey2 + (strCheck ? "'" : "");
 
             if (primaryKeys.length > i + 1) sqlStr += " AND ";
         }
 
-        Column[] columns = getColumn();
-        HashMap<Column, Object> values = new HashMap<>();
-        try (ResultSet rs = database.executeQuery("SELECT * FROM " + table + " WHERE " + sqlStr)) {
+        final Column[] columns = getColumn();
+        final HashMap<Column, Object> values = new HashMap<>();
+        try (final ResultSet rs = database.executeQuery("SELECT * FROM " + table + " WHERE " + sqlStr)) {
             while (rs.next()) {
-                for (Column column : columns) {
+                for (final Column column : columns) {
                     values.put(column, rs.getObject(column.getName()));
                 }
             }
-        } catch (SQLException e) {
+        } catch (final SQLException e) {
             e.printStackTrace();
         }
         return values;
     }
 
-    public HashMap<String, Object> get(Object... primaryKeys) {
-        HashMap<String, Object> values = new HashMap<>();
+    public HashMap<String, Object> get(final Object... primaryKeys) {
+        final HashMap<String, Object> values = new HashMap<>();
         getWithColumns(primaryKeys).forEach((column, o) -> values.put(column.getName(), o));
         return values;
     }
 
-    public void addKey(Key key) {
+    public void addKey(final Key key) {
         if (Arrays.stream(getKey()).anyMatch(key_ ->
                 Objects.equals(key_.getName(), key.getName()) &&
                         key_.getType() == key.getType() &&
@@ -250,26 +252,26 @@ public class Table {
         }
 
     }
-    public void removeKeyValue(Key key) {
-        String sql = "ALTER TABLE " + table + " DROP " +
+    public void removeKeyValue(final Key key) {
+        final String sql = "ALTER TABLE " + table + " DROP " +
                 (key.isPrimaryKey() ? "PRIMARY KEY " : "COLUMN ") +
                 key.getName() + ";";
         database.executeUpdate(sql);
     }
-    public void removeKey(PrimaryKey[] primaryKeys, Object[] value) {
+    public void removeKey(final PrimaryKey[] primaryKeys, final Object[] value) {
         String sql = "DELETE FROM " + table + " WHERE ";
 
-        PrimaryKey[] primaryKeys2 = getPrimaryKey();
+        final PrimaryKey[] primaryKeys2 = getPrimaryKey();
         if (primaryKeys.length != primaryKeys2.length) throw new IllegalArgumentException("Keys length isn't SQL keys length");
 
         String keyStr = "";
         for (int i = 0; i < primaryKeys.length; i++) {
-            PrimaryKey primaryKey = primaryKeys[i];
-            PrimaryKey primaryKey2 = primaryKeys2[i];
+            final PrimaryKey primaryKey = primaryKeys[i];
+            final PrimaryKey primaryKey2 = primaryKeys2[i];
             if (!DatabaseUtils.validKey(primaryKey2.getType(), primaryKey))
                 throw new RuntimeException("Key is invalid (" + primaryKey + ")");
 
-            boolean keyStrCheck = primaryKey2.getType() == Key.Type.String;
+            final boolean keyStrCheck = primaryKey2.getType() == Key.Type.String;
             keyStr += primaryKey2.getName() + " = " + (keyStrCheck ? "'" : "") + primaryKey + (keyStrCheck ? "'" : "");
             if (primaryKeys.length > i + 1) keyStr += " AND ";
         }

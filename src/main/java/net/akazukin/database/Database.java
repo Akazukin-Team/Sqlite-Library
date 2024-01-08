@@ -24,11 +24,11 @@ public class Database {
     private String username = "Akazukin-Bot";
     private String password = "SQLite-By-Official";
 
-    public Database(Path path) {
+    public Database(final Path path) {
         this.path = path;
     }
 
-    public Database(Path dbName, String username, String password) {
+    public Database(final Path dbName, final String username, final String password) {
         this.path = dbName;
         this.username = username;
         this.password = password;
@@ -37,7 +37,7 @@ public class Database {
     public boolean isClosed() {
         try {
             return connection == null || connection.isClosed();
-        } catch (SQLException e) {
+        } catch (final SQLException e) {
             e.printStackTrace();
             return connection == null;
         }
@@ -47,7 +47,7 @@ public class Database {
         if (!isClosed()) {
             try {
                 connection.close();
-            } catch (SQLException e) {
+            } catch (final SQLException e) {
                 e.printStackTrace();
             }
         }
@@ -59,12 +59,12 @@ public class Database {
         return getConnection(false);
     }
 
-    public Connection getConnection(boolean transMode) {
+    public Connection getConnection(final boolean transMode) {
         try {
             try {
                 Files.createDirectory(path.getParent());
-            } catch (FileAlreadyExistsException ignored) {
-            } catch (IOException e) {
+            } catch (final FileAlreadyExistsException ignored) {
+            } catch (final IOException e) {
                 throw new RuntimeException(e);
             }
             if (isClosed()) {
@@ -72,54 +72,54 @@ public class Database {
             }
             connection.setAutoCommit(!transMode);
             return connection;
-        } catch (SQLException e) {
+        } catch (final SQLException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public void executeUpdate(String sql) {
+    public void executeUpdate(final String sql) {
         executeUpdate(sql, false);
     }
 
-    public void executeUpdate(String sql, boolean transMode) {
-        Connection con = getConnection(transMode);
-        try (Statement statement = con.createStatement()) {
+    public void executeUpdate(final String sql, final boolean transMode) {
+        final Connection con = getConnection(transMode);
+        try (final Statement statement = con.createStatement()) {
             statement.executeUpdate(sql);
-        } catch (Exception e) {
+        } catch (final Exception e) {
             throw new RuntimeException(e);
         }
     }
 
-    public ResultSet executeQuery(String sql) {
+    public ResultSet executeQuery(final String sql) {
         try {
             return getConnection().createStatement().executeQuery(sql);
-        } catch (Exception e) {
+        } catch (final Exception e) {
             throw new RuntimeException(e);
         }
     }
 
     public DatabaseMetaData getMetaData() {
         try {
-            Connection connection = getConnection();
+            final Connection connection = getConnection();
             return connection.getMetaData();
-        } catch (SQLException e) {
+        } catch (final SQLException e) {
             throw new RuntimeException(e);
         }
     }
 
     public Table[] getTables() {
-        List<Table> tables = new ArrayList<>();
-        try (ResultSet rs = getMetaData().getTables(null, null, "%", new String[]{"TABLE"})) {
+        final List<Table> tables = new ArrayList<>();
+        try (final ResultSet rs = getMetaData().getTables(null, null, "%", new String[]{"TABLE"})) {
             while(rs.next()) {
                 tables.add(getTable(rs.getString("TABLE_NAME")));
             }
             return tables.toArray(new Table[]{});
-        } catch (SQLException e) {
+        } catch (final SQLException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public Table getTable(String table) {
+    public Table getTable(final String table) {
         return new Table(this, table);
     }
 }

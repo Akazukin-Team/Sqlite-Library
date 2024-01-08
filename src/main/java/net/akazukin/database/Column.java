@@ -1,17 +1,17 @@
 package net.akazukin.database;
 
 public class Column extends Key {
-    public Column(String name, Type type) {
+    public Column(final String name, final Type type) {
         this.name = name;
         this.type = type;
     }
-    public Column(String name, Type type, int length) {
+    public Column(final String name, final Type type, final int length) {
         this.name = name;
         this.type = type;
         this.length = length;
     }
 
-    public Column(String name, Type type, int length, boolean notNull, Object defaulT) {
+    public Column(final String name, final Type type, final int length, final boolean notNull, final Object defaulT) {
         this.name = name;
         this.type = type;
         this.length = length;

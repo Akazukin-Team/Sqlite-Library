@@ -29,10 +29,10 @@ public abstract class Key {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        Key key = (Key) o;
+        final Key key = (Key) o;
 
         return length == key.length && isPrimaryKey == key.isPrimaryKey && isNullable == key.isNullable && Objects.equals(name, key.name) && type == key.type && Objects.equals(defaulT, key.defaulT);
     }
@@ -50,7 +50,7 @@ public abstract class Key {
         Binary("BLOB");
 
         private final String name;
-        Type(String name) {
+        Type(final String name) {
             this.name = name;
         }
 
@@ -58,7 +58,7 @@ public abstract class Key {
             return name;
         }
 
-        public static Type getType(String type) {
+        public static Type getType(final String type) {
             return Arrays.stream(values()).filter(type2 -> (type2.getName().equalsIgnoreCase(type))).findFirst().get();
         }
     }

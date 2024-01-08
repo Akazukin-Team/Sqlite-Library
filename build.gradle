@@ -6,7 +6,6 @@ buildscript {
         }
     }
     dependencies {
-        //classpath 'org.hidetake:gradle-ssh-plugin:2.10.1'
         classpath('com.guardsquare:proguard-gradle:7.4.0-beta02')
     }
 }
@@ -14,8 +13,6 @@ buildscript {
 plugins {
     id "java"
     id "idea"
-    //id "com.github.johnrengelman.shadow" version "8.1.1"
-    id "application"
     id "maven-publish"
 }
 
@@ -39,24 +36,8 @@ configurations {
 
 dependencies {
     include ('org.xerial:sqlite-jdbc:3.44.1.0')
-    compileOnly 'org.projectlombok:lombok:1.18.30'
-    annotationProcessor 'org.projectlombok:lombok:1.18.30'
-}
-
-jar {
-    manifest {
-        attributes 'Main-Class': 'net.akazukin.bot.Main'
-    }
-}
-
-application {
-    File runningDir = new File('run/')
-    runningDir.mkdirs()
-    tasks.run.workingDir = runningDir
-
-    mainClassName = jar.manifest.attributes.get("Main-Class")
-    executableDir = "run/"
-    applicationDefaultJvmArgs = ["-Xms3G", "-Xmx4G"]
+    compileOnly('org.projectlombok:lombok:1.18.30')
+    annotationProcessor('org.projectlombok:lombok:1.18.30')
 }
 
 publishing {
